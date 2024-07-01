@@ -1,7 +1,6 @@
 use anyhow::Result;
 use csv::Reader;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use std::fs;
 
 use crate::opts::OutputFormat;
@@ -19,7 +18,7 @@ pub struct Player {
     kit: u8,
 }
 
-pub fn process_csv(input: &str, output: String, _format: OutputFormat) -> Result<()> {
+pub fn process_csv(input: &str, output: String, format: OutputFormat) -> Result<()> {
     let mut reader = Reader::from_path(input)?;
     let mut ret = Vec::with_capacity(128);
     let headers = reader.headers()?.clone();
@@ -27,10 +26,18 @@ pub fn process_csv(input: &str, output: String, _format: OutputFormat) -> Result
         let record = result?;
         // zip 将两个迭代器合并成一个元组的迭代器[(headers, record,...)]
         // collect 将元组的迭代器转化为JSON VALUE，这里的JSON VALUE也实现了迭代器，所以能collect
-        let json_value = headers.iter().zip(record.iter()).collect::<Value>();
+        let json_value = headers
+            .iter()
+            .zip(record.iter())
+            .collect::<serde_json::Value>();
         ret.push(json_value);
     }
-    let json = serde_json::to_string_pretty(&ret)?;
-    fs::write(output, json)?; // 这个返回的是()，结尾要返回Result
+
+    let content = match format {
+        OutputFormat::Json => serde_json::to_string_pretty(&ret)?,
+        OutputFormat::Yaml => serde_yaml::to_string(&ret)?,
+    };
+
+    fs::write(output, content)?; // 这个返回的是()，结尾要返回Result
     Ok(())
 }
