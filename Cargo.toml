@@ -15,3 +15,4 @@ rand = "0.8.5"
 serde = { version = "1.0.203", features = ["derive"] }
 serde_json = "1.0.119"
 serde_yaml = "0.9.34"
+zxcvbn = "3.0.1"
