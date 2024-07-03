@@ -3,7 +3,7 @@ use csv::Reader;
 use serde::{Deserialize, Serialize};
 use std::fs;
 
-use crate::opts::OutputFormat;
+use crate::cli::OutputFormat;
 
 #[derive(Debug, Deserialize, Serialize)]
 //命名规则，首字母大写，驼峰式，即name会自动对应Name
