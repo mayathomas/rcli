@@ -9,7 +9,7 @@ pub use self::{
     base64::{Base64Format, Base64SubCommand},
     csv::{CsvOpts, OutputFormat},
     genpass::GenPassOpts,
-    text::{TextSignFormat, TextSubCommand},
+    text::{TextCryptoFormat, TextSignFormat, TextSubCommand},
 };
 use clap::Parser;
 

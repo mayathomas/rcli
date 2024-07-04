@@ -14,6 +14,10 @@ pub enum TextSubCommand {
     Verify(TextVerifyOpts),
     #[command(about = "Generate a new key")]
     Generate(TextKeyGenerateOpts),
+    #[command(about = "Encrypt with chacha20-poly1305")]
+    Encrypt(TextEncryptOpts),
+    #[command(about = "Decrypt with chacha20-poly1305")]
+    Decrypt(TextDecryptOpts),
 }
 
 #[derive(Debug, Parser)]
@@ -22,7 +26,7 @@ pub struct TextSignOpts {
     pub input: String,
     #[arg(short, long, value_parser = verify_file)]
     pub key: String,
-    #[arg(long, value_parser = parse_format, default_value = "blake3")]
+    #[arg(long, value_parser = parse_sig_format, default_value = "blake3")]
     pub format: TextSignFormat,
 }
 
@@ -34,16 +38,45 @@ pub struct TextVerifyOpts {
     pub key: String,
     #[arg(short, long)]
     pub sig: String,
-    #[arg(long, value_parser = parse_format, default_value = "blake3")]
+    #[arg(long, value_parser = parse_sig_format, default_value = "blake3")]
     pub format: TextSignFormat,
 }
 
 #[derive(Debug, Parser)]
 pub struct TextKeyGenerateOpts {
-    #[arg(long, value_parser = parse_format, default_value = "blake3")]
+    #[arg(long, value_parser = parse_sig_format, default_value = "blake3")]
     pub format: TextSignFormat,
     #[arg(short, long, value_parser = verify_path)]
     pub output: PathBuf,
+}
+
+#[derive(Debug, Parser)]
+pub struct TextEncryptOpts {
+    #[arg(short, long, value_parser = verify_file, default_value = "-")]
+    pub input: String,
+    #[arg(long, value_parser = verify_file)]
+    pub key: String,
+    #[arg(long)]
+    pub nonce: String,
+    #[arg(long, value_parser = parse_crypto_format, default_value = "chacha20")]
+    pub format: TextCryptoFormat,
+}
+
+#[derive(Debug, Parser)]
+pub struct TextDecryptOpts {
+    #[arg(short, long, value_parser = verify_file, default_value = "-")]
+    pub input: String,
+    #[arg(long, value_parser = verify_file)]
+    pub key: String,
+    #[arg(long, value_parser = verify_file)]
+    pub nonce: String,
+    #[arg(long, value_parser = parse_crypto_format, default_value = "chacha20")]
+    pub format: TextCryptoFormat,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum TextCryptoFormat {
+    Chacha20,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -52,7 +85,7 @@ pub enum TextSignFormat {
     Ed25519,
 }
 
-fn parse_format(format: &str) -> Result<TextSignFormat, anyhow::Error> {
+fn parse_sig_format(format: &str) -> Result<TextSignFormat, anyhow::Error> {
     format.parse()
 }
 
@@ -78,6 +111,35 @@ impl From<TextSignFormat> for &'static str {
 }
 
 impl fmt::Display for TextSignFormat {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", Into::<&'static str>::into(*self))
+    }
+}
+
+fn parse_crypto_format(format: &str) -> Result<TextCryptoFormat, anyhow::Error> {
+    format.parse()
+}
+
+impl FromStr for TextCryptoFormat {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "chacha20" => Ok(TextCryptoFormat::Chacha20),
+            _ => Err(anyhow::anyhow!("Invalid format")),
+        }
+    }
+}
+
+impl From<TextCryptoFormat> for &'static str {
+    fn from(format: TextCryptoFormat) -> Self {
+        match format {
+            TextCryptoFormat::Chacha20 => "chacha20",
+        }
+    }
+}
+
+impl fmt::Display for TextCryptoFormat {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", Into::<&'static str>::into(*self))
     }

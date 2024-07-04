@@ -4,9 +4,9 @@ use clap::Parser;
 use zxcvbn::zxcvbn;
 
 use rcli::{
-    process_csv, process_decode, process_encode, process_genpass, process_text_generate,
-    process_text_sign, process_text_verify, Base64SubCommand, Opts, SubCommand, TextSignFormat,
-    TextSubCommand,
+    process_csv, process_decode, process_encode, process_genpass, process_text_decrypt,
+    process_text_encrypt, process_text_generate, process_text_sign, process_text_verify,
+    Base64SubCommand, Opts, SubCommand, TextSignFormat, TextSubCommand,
 };
 
 fn main() -> anyhow::Result<()> {
@@ -67,7 +67,23 @@ fn main() -> anyhow::Result<()> {
                     }
                 }
             }
+            TextSubCommand::Encrypt(opts) => {
+                let encrypted =
+                    process_text_encrypt(&opts.input, &opts.key, &opts.nonce, opts.format)?;
+                println!("{}", encrypted);
+            }
+            TextSubCommand::Decrypt(opts) => {
+                let decrypted =
+                    process_text_decrypt(&opts.input, &opts.key, &opts.nonce, opts.format)?;
+                println!("{}", decrypted);
+            }
         },
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn ttt() {}
 }
