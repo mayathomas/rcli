@@ -4,12 +4,15 @@ use clap::Parser;
 use zxcvbn::zxcvbn;
 
 use rcli::{
-    process_csv, process_decode, process_encode, process_genpass, process_text_decrypt,
-    process_text_encrypt, process_text_generate, process_text_sign, process_text_verify,
-    Base64SubCommand, Opts, SubCommand, TextSignFormat, TextSubCommand,
+    process_csv, process_decode, process_encode, process_genpass, process_http_serve,
+    process_text_decrypt, process_text_encrypt, process_text_generate, process_text_sign,
+    process_text_verify, Base64SubCommand, HttpSubCommand, Opts, SubCommand, TextSignFormat,
+    TextSubCommand,
 };
 
-fn main() -> anyhow::Result<()> {
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    tracing_subscriber::fmt::init();
     let opts = Opts::parse();
     match opts.cmd {
         SubCommand::Csv(opts) => {
@@ -76,6 +79,11 @@ fn main() -> anyhow::Result<()> {
                 let decrypted =
                     process_text_decrypt(&opts.input, &opts.key, &opts.nonce, opts.format)?;
                 println!("{}", decrypted);
+            }
+        },
+        SubCommand::Http(subcmd) => match subcmd {
+            HttpSubCommand::Serve(opts) => {
+                process_http_serve(opts.dir, opts.port).await?;
             }
         },
     }
