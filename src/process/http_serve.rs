@@ -7,7 +7,6 @@ use axum::{
 };
 use std::{net::SocketAddr, path::PathBuf, sync::Arc};
 use tracing::{info, warn};
-use tracing_subscriber::fmt::format;
 
 #[derive(Debug)]
 struct HttpServeState {
@@ -37,10 +36,10 @@ async fn file_handler(
     let p = std::path::Path::new(&state.path).join(path);
     info!("Reading file {:?}", p);
     if !p.exists() {
-        return (
+        (
             StatusCode::NOT_FOUND,
             format!("File {} not found", p.display()),
-        );
+        )
     } else {
         match tokio::fs::read_to_string(p).await {
             Ok(content) => {
