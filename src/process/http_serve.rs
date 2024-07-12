@@ -6,20 +6,30 @@ use axum::{
     Router,
 };
 use std::{net::SocketAddr, path::PathBuf, sync::Arc};
+use tower_http::services::ServeDir;
 use tracing::{info, warn};
 
 #[derive(Debug)]
 struct HttpServeState {
-    path: PathBuf,
+    dir: PathBuf,
 }
 
-pub async fn process_http_serve(path: PathBuf, port: u16) -> Result<()> {
+pub async fn process_http_serve(dir: PathBuf, port: u16) -> Result<()> {
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
-    info!("Serving {:?} on {}", path, addr);
+    info!("Serving {:?} on {}", dir, addr);
 
-    let state = HttpServeState { path };
+    let state = HttpServeState { dir: dir.clone() };
+    let dir_service = ServeDir::new(dir)
+        .append_index_html_on_directories(true)
+        .precompressed_gzip()
+        .precompressed_br()
+        .precompressed_deflate()
+        .precompressed_zstd();
+
     let router = Router::new()
         .route("/*path", get(file_handler))
+        //将/tower目录映射到ServeDir
+        .nest_service("/tower", dir_service)
         //每次调用handler时都会clone，因此这里使用Arc减少性能消耗
         .with_state(Arc::new(state));
     let listener = tokio::net::TcpListener::bind(addr).await?;
@@ -32,8 +42,8 @@ async fn file_handler(
     State(state): State<Arc<HttpServeState>>,
     Path(path): Path<String>,
 ) -> (StatusCode, String) {
-    println!("{:?}", &state.path);
-    let p = std::path::Path::new(&state.path).join(path);
+    println!("dir:{:?}, path:{:?}", &state.dir, path);
+    let p = std::path::Path::new(&state.dir).join(path);
     info!("Reading file {:?}", p);
     if !p.exists() {
         (
@@ -51,5 +61,19 @@ async fn file_handler(
                 (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[tokio::test]
+    async fn test_file_handler() {
+        let state = Arc::new(HttpServeState {
+            dir: PathBuf::from("."),
+        });
+        let (status, content) = file_handler(State(state), Path("Cargo.toml".to_string())).await;
+        assert_eq!(status, StatusCode::OK);
+        assert!(content.trim().starts_with("[package]"));
     }
 }

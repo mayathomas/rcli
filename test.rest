@@ -1,4 +1,8 @@
 
-### test index
+### test static file
 
-GET http://localhost:8080/../kv/Cargo.toml
+GET http://localhost:8080/fixtures/nonce.txt
+
+### test static file with tower-http
+GET http://localhost:8080/tower/fixtures/
+Range: bytes=0-100
