@@ -13,6 +13,7 @@ pub use self::{
     http::HttpSubCommand,
     text::{TextCryptoFormat, TextSignFormat, TextSubCommand},
 };
+use crate::CmdExecutor;
 use clap::Parser;
 
 #[derive(Debug, Parser)]
@@ -36,6 +37,18 @@ pub enum SubCommand {
     Text(TextSubCommand),
     #[command(subcommand)]
     Http(HttpSubCommand),
+}
+
+impl CmdExecutor for SubCommand {
+    async fn execute(self) -> anyhow::Result<()> {
+        match self {
+            SubCommand::Csv(opts) => opts.execute().await,
+            SubCommand::GenPass(opts) => opts.execute().await,
+            SubCommand::Base64(cmd) => cmd.execute().await,
+            SubCommand::Text(cmd) => cmd.execute().await,
+            SubCommand::Http(cmd) => cmd.execute().await,
+        }
+    }
 }
 
 //String字面量是生命周期为static的&str

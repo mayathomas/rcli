@@ -1,5 +1,11 @@
 # Geektime Rust 语言训练营
 
+# 作业一
+--nonce指定随机数文件，大小为12字节，96位
+- rcli text encrypt --key fixtures/blake3.txt --nonce fixtures/nonce.txt
+- rcli text decrypt --key fixtures/blake3.txt --nonce fixtures/nonce.txt
+
+
 ## 环境设置
 
 ### 安装 Rust

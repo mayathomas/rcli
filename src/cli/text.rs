@@ -2,6 +2,9 @@ use core::fmt;
 use std::{path::PathBuf, str::FromStr};
 
 use clap::Parser;
+use tokio::fs;
+
+use crate::{process_text_sign, CmdExecutor};
 
 use super::{verify_file, verify_path};
 
@@ -142,5 +145,67 @@ impl From<TextCryptoFormat> for &'static str {
 impl fmt::Display for TextCryptoFormat {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", Into::<&'static str>::into(*self))
+    }
+}
+
+impl CmdExecutor for TextSubCommand {
+    async fn execute(self) -> anyhow::Result<()> {
+        match self {
+            TextSubCommand::Sign(opts) => opts.execute().await,
+            TextSubCommand::Verify(opts) => opts.execute().await,
+            TextSubCommand::Generate(opts) => opts.execute().await,
+            TextSubCommand::Encrypt(opts) => opts.execute().await,
+            TextSubCommand::Decrypt(opts) => opts.execute().await,
+        }
+    }
+}
+
+impl CmdExecutor for TextSignOpts {
+    async fn execute(self) -> anyhow::Result<()> {
+        let sig = process_text_sign(&self.input, &self.key, self.format)?;
+        print!("{}", sig);
+        Ok(())
+    }
+}
+
+impl CmdExecutor for TextVerifyOpts {
+    async fn execute(self) -> anyhow::Result<()> {
+        let verified = crate::process_text_verify(&self.input, &self.key, self.format, &self.sig)?;
+        println!("{}", verified);
+        Ok(())
+    }
+}
+
+impl CmdExecutor for TextKeyGenerateOpts {
+    async fn execute(self) -> anyhow::Result<()> {
+        let key = crate::process_text_generate(self.format)?;
+        match self.format {
+            TextSignFormat::Blake3 => {
+                let name = self.output.join("blake3.txt");
+                fs::write(name, &key[0]).await?;
+            }
+            TextSignFormat::Ed25519 => {
+                let name = self.output;
+                fs::write(name.join("ed25519.sk"), &key[0]).await?;
+                fs::write(name.join("ed25519.pk"), &key[1]).await?;
+            }
+        }
+        Ok(())
+    }
+}
+
+impl CmdExecutor for TextEncryptOpts {
+    async fn execute(self) -> anyhow::Result<()> {
+        let cipher = crate::process_text_encrypt(&self.input, &self.key, &self.nonce, self.format)?;
+        print!("{}", cipher);
+        Ok(())
+    }
+}
+
+impl CmdExecutor for TextDecryptOpts {
+    async fn execute(self) -> anyhow::Result<()> {
+        let plain = crate::process_text_decrypt(&self.input, &self.key, &self.nonce, self.format)?;
+        print!("{}", plain);
+        Ok(())
     }
 }
