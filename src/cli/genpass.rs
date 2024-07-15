@@ -26,6 +26,7 @@ impl CmdExecutor for GenPassOpts {
             self.number,
             self.symbol,
         )?;
+        println!("{}", &ret);
         let estimate = zxcvbn(&ret, &[]);
         eprintln!("Password strength: {}", estimate.score());
         Ok(())

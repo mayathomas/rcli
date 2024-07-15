@@ -2,6 +2,7 @@ use core::fmt;
 use std::{path::PathBuf, str::FromStr};
 
 use clap::Parser;
+use enum_dispatch::enum_dispatch;
 use tokio::fs;
 
 use crate::{process_text_sign, CmdExecutor};
@@ -9,6 +10,7 @@ use crate::{process_text_sign, CmdExecutor};
 use super::{verify_file, verify_path};
 
 #[derive(Debug, Parser)]
+#[enum_dispatch(CmdExecutor)]
 pub enum TextSubCommand {
     //不写name会默认使用首字母小写的命令名
     #[command(about = "Sign a message with a private key")]
@@ -145,18 +147,6 @@ impl From<TextCryptoFormat> for &'static str {
 impl fmt::Display for TextCryptoFormat {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", Into::<&'static str>::into(*self))
-    }
-}
-
-impl CmdExecutor for TextSubCommand {
-    async fn execute(self) -> anyhow::Result<()> {
-        match self {
-            TextSubCommand::Sign(opts) => opts.execute().await,
-            TextSubCommand::Verify(opts) => opts.execute().await,
-            TextSubCommand::Generate(opts) => opts.execute().await,
-            TextSubCommand::Encrypt(opts) => opts.execute().await,
-            TextSubCommand::Decrypt(opts) => opts.execute().await,
-        }
     }
 }
 

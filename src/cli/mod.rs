@@ -6,15 +6,9 @@ mod text;
 
 use std::path::{Path, PathBuf};
 
-pub use self::{
-    base64::{Base64Format, Base64SubCommand},
-    csv::{CsvOpts, OutputFormat},
-    genpass::GenPassOpts,
-    http::HttpSubCommand,
-    text::{TextCryptoFormat, TextSignFormat, TextSubCommand},
-};
-use crate::CmdExecutor;
+pub use self::{base64::*, csv::*, genpass::*, http::*, text::*};
 use clap::Parser;
+use enum_dispatch::enum_dispatch;
 
 #[derive(Debug, Parser)]
 #[command(name="rcli", version, author, about, long_about=None)]
@@ -25,6 +19,7 @@ pub struct Opts {
 }
 
 #[derive(Debug, Parser)]
+#[enum_dispatch(CmdExecutor)]
 pub enum SubCommand {
     //子命令，-- csv，中间有个空格
     #[command(name = "csv", about = "Show CSV, or convert CSV to other formats")]
@@ -37,18 +32,6 @@ pub enum SubCommand {
     Text(TextSubCommand),
     #[command(subcommand)]
     Http(HttpSubCommand),
-}
-
-impl CmdExecutor for SubCommand {
-    async fn execute(self) -> anyhow::Result<()> {
-        match self {
-            SubCommand::Csv(opts) => opts.execute().await,
-            SubCommand::GenPass(opts) => opts.execute().await,
-            SubCommand::Base64(cmd) => cmd.execute().await,
-            SubCommand::Text(cmd) => cmd.execute().await,
-            SubCommand::Http(cmd) => cmd.execute().await,
-        }
-    }
 }
 
 //String字面量是生命周期为static的&str

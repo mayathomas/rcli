@@ -2,12 +2,14 @@ use core::fmt;
 use std::str::FromStr;
 
 use clap::Parser;
+use enum_dispatch::enum_dispatch;
 
 use crate::CmdExecutor;
 
 use super::verify_file;
 
 #[derive(Debug, Parser)]
+#[enum_dispatch(CmdExecutor)]
 pub enum Base64SubCommand {
     #[command(name = "encode")]
     Encode(Base64EncodeOpts),
@@ -72,9 +74,6 @@ impl CmdExecutor for Base64EncodeOpts {
     async fn execute(self) -> anyhow::Result<()> {
         let encoded = crate::process_encode(&self.input, self.format)?;
         println!("{}", encoded);
-        // let reader = crate::get_content(&self.input)?;
-        // let ret = crate::process_encode(String::from_utf8(reader)?.as_str(), self.format)?;
-        // println!("{}", ret);
         Ok(())
     }
 }
@@ -83,18 +82,6 @@ impl CmdExecutor for Base64DecodeOpts {
     async fn execute(self) -> anyhow::Result<()> {
         let decoded = crate::process_decode(&self.input, self.format)?;
         println!("{}", String::from_utf8(decoded)?);
-        // let reader = crate::get_content(&self.input)?;
-        // let ret = crate::process_decode(String::from_utf8(reader)?.as_str(), self.format)?;
-        // println!("{}", String::from_utf8(ret)?.as_str());
         Ok(())
-    }
-}
-
-impl CmdExecutor for Base64SubCommand {
-    async fn execute(self) -> anyhow::Result<()> {
-        match self {
-            Base64SubCommand::Encode(opts) => opts.execute().await,
-            Base64SubCommand::Decode(opts) => opts.execute().await,
-        }
     }
 }
