@@ -1,8 +1,8 @@
 
 ### test static file
 
-GET http://localhost:8080/fixtures/nonce.txt
+GET http://localhost:8080/fixtures/
 
 ### test static file with tower-http
-GET http://localhost:8080/tower/fixtures/
+GET http://localhost:8080/tower/fixtures/nonce.txt
 Range: bytes=0-100

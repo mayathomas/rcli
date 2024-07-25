@@ -20,7 +20,7 @@ pub async fn process_http_serve(dir: PathBuf, port: u16) -> Result<()> {
 
     let state = HttpServeState { dir: dir.clone() };
     let dir_service = ServeDir::new(dir)
-        .append_index_html_on_directories(true)
+        .append_index_html_on_directories(false)
         .precompressed_gzip()
         .precompressed_br()
         .precompressed_deflate()
@@ -50,6 +50,35 @@ async fn file_handler(
             StatusCode::NOT_FOUND,
             format!("File {} not found", p.display()),
         )
+    } else if p.is_dir() {
+        match tokio::fs::read_dir(p).await {
+            Ok(mut dir) => {
+                let mut dirs: Vec<String> = Vec::new();
+                loop {
+                    match dir.next_entry().await {
+                        Ok(Some(entry)) => {
+                            if let Err(e) = entry.file_name().into_string() {
+                                return (
+                                    StatusCode::INTERNAL_SERVER_ERROR,
+                                    format!("Get filename oserror: {:?}", e),
+                                );
+                            }
+                            dirs.push(entry.file_name().into_string().unwrap());
+                        }
+                        Ok(None) => {
+                            break;
+                        }
+                        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
+                    }
+                }
+                let dirs = dirs.join("\n");
+                (StatusCode::OK, dirs.to_string())
+            }
+            Err(e) => {
+                warn!("Error reading dir: {:?}", e);
+                (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
+            }
+        }
     } else {
         match tokio::fs::read_to_string(p).await {
             Ok(content) => {
